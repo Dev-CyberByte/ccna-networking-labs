@@ -447,19 +447,3 @@ la máscara exacta de cada subred en la tabla de direccionamiento.
 | Rutas estáticas | Conectividad entre routers |
 | Tabla de enrutamiento | show ip route en cada router |
 | Traceroute | Verificar el camino extremo a extremo |
-
----
-
-## Capturas requeridas
-
-Guarda las siguientes capturas en la carpeta `capturas/`:
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia.png | Vista general de la topología completa en Packet Tracer |
-| vlsm-diseno.png | Tabla de subredes resuelta |
-| r1-route.png | Salida de show ip route en R1 |
-| r2-route.png | Salida de show ip route en R2 |
-| r3-route.png | Salida de show ip route en R3 |
-| ping-ventas-gerencia.png | Ping exitoso de PC-Ventas a PC-Gerencia |
-| traceroute.png | Traceroute mostrando el camino completo |
