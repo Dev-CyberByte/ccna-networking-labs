@@ -295,16 +295,3 @@ R1(config-if)# no shutdown
 | Administración remota | line vty, line console, exec-timeout |
 | Interfaz de switch | interface vlan 1, ip default-gateway |
 | Guardar configuración | copy running-config startup-config |
-
----
-
-## Capturas requeridas
-
-Guarda las siguientes capturas en la carpeta `capturas/`:
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia.png | Vista general de la topología en Packet Tracer |
-| r1-interfaces.png | Salida de show ip interface brief en R1 |
-| ping-pc1-pc2.png | Ping exitoso de PC1 a PC2 |
-| ping-pc2-pc1.png | Ping exitoso de PC2 a PC1 |
