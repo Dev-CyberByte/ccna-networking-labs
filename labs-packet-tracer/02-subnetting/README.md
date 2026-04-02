@@ -40,18 +40,31 @@ y debes dividirlo eficientemente usando VLSM.
 ---
 
 ## Topología
+
 ```
-Ventas(50)  TI(25)              RRHH(10)  Gerencia(5)
-    │          │                    │          │
-  Fa0/1      Fa0/2              Fa0/1      Fa0/2
-    └────┬────┘                  └────┬────┘
-        SW1                          SW2
-         │                            │
-        G0/0                         G0/0
-         R1 ────── WAN ────────────── R2 ────── WAN ────── R3
-        G0/1                         G0/1
-    (Enlace R1-R2)              (Enlace R2-R3)
+Ventas(50)  TI(25)        RRHH(10)  Gerencia(5)
+    │          │               │          │
+  Fa0/1      Fa0/2           Fa0/1      Fa0/2
+    └────┬────┘               └────┬────┘
+        SW1                       SW2
+         │                         │
+        G0/0                      G0/0
+         R1 ──── WAN ──────────── R2 ──── WAN ──── R3
+        G0/1                    G0/1  G0/2        G0/0
+    (Enlace R1-R2)           (hacia R1)(hacia R3)
 ```
+
+> R3 es un router remoto de sucursal sin LAN conectada en este laboratorio.
+> Solo participa en el enlace WAN con R2.
+
+### Modelos de dispositivos utilizados
+
+| Dispositivo | Modelo PKT | Motivo |
+|-------------|-----------|--------|
+| R1 | Cisco 1941 | Solo necesita 2 interfaces (G0/0 y G0/1) |
+| R2 | Cisco 2911 | Necesita 3 interfaces (G0/0, G0/1 y G0/2) |
+| R3 | Cisco 1941 | Solo necesita 1 interfaz (G0/0) |
+| SW1, SW2 | Cisco 2960 | Switches de acceso para las LANs |
 
 ---
 
@@ -127,7 +140,7 @@ Hosts útiles:    2
 ```
 Red:             192.168.100.124/30
 Máscara:         255.255.255.252
-Primer host:     192.168.100.124
+Primer host:     192.168.100.125
 Último host:     192.168.100.126
 Broadcast:       192.168.100.127
 Hosts útiles:    2
@@ -144,7 +157,7 @@ Hosts útiles:    2
 | WAN R1-R2 | 192.168.100.120/30 | 255.255.255.252 | — | 192.168.100.123 | 2 |
 | WAN R2-R3 | 192.168.100.124/30 | 255.255.255.252 | — | 192.168.100.127 | 2 |
 
-Espacio usado: .0 → .127 (128 de 256 direcciones)
+Espacio usado: .0 → .127 (128 de 256 direcciones)  
 Espacio libre: 192.168.100.128 → 192.168.100.255
 
 ---
@@ -155,16 +168,17 @@ Espacio libre: 192.168.100.128 → 192.168.100.255
 |-------------|----------|-------------|---------|---------|
 | R1 | G0/0 | 192.168.100.1 | 255.255.255.192 | — |
 | R1 | G0/1 | 192.168.100.121 | 255.255.255.252 | — |
-| R2 | G0/0 | 192.168.100.65 | 255.255.255.224 | — |
+| R2 | G0/0 | 192.168.100.97 | 255.255.255.240 | — |
 | R2 | G0/1 | 192.168.100.122 | 255.255.255.252 | — |
 | R2 | G0/2 | 192.168.100.125 | 255.255.255.252 | — |
-| R3 | G0/0 | 192.168.100.97 | 255.255.255.240 | — |
-| R3 | G0/1 | 192.168.100.113 | 255.255.255.248 | — |
-| R3 | G0/2 | 192.168.100.126 | 255.255.255.252 | — |
+| R3 | G0/0 | 192.168.100.126 | 255.255.255.252 | — |
 | PC-Ventas | NIC | 192.168.100.10 | 255.255.255.192 | 192.168.100.1 |
 | PC-TI | NIC | 192.168.100.70 | 255.255.255.224 | 192.168.100.65 |
 | PC-RRHH | NIC | 192.168.100.100 | 255.255.255.240 | 192.168.100.97 |
 | PC-Gerencia | NIC | 192.168.100.114 | 255.255.255.248 | 192.168.100.113 |
+
+> **Nota:** PC-RRHH y PC-Gerencia tienen como gateway a R2 (G0/0),
+> ya que SW2 está conectado directamente a R2 en esta topología.
 
 ---
 
@@ -173,24 +187,30 @@ Espacio libre: 192.168.100.128 → 192.168.100.255
 ### Paso 1 — Armar la topología
 
 Dispositivos necesarios:
-- 3 Routers 2911
-- 2 Switches 2960
+- 1 Router Cisco 1941 (R1)
+- 1 Router Cisco 2911 (R2)
+- 1 Router Cisco 1941 (R3)
+- 2 Switches Cisco 2960 (SW1 y SW2)
 - 4 PCs
 
 Conexiones:
+
 ```
-PC-Ventas    → SW1 Fa0/1
-PC-TI        → SW1 Fa0/2
-SW1          → R1  G0/0
-R1  G0/1     → R2  G0/1  (enlace WAN R1-R2, cable serial o crossover)
-R2  G0/0     → SW2 G0/1
-R2  G0/2     → R3  G0/2  (enlace WAN R2-R3)
-SW2  Fa0/1   → PC-RRHH
-SW2  Fa0/2   → PC-Gerencia
-R3  G0/0     → SW2 (si usas un tercer switch) o directo a PCs
+PC-Ventas  (Fa0) → SW1 (Fa0/1)
+PC-TI      (Fa0) → SW1 (Fa0/2)
+SW1        (G0/1) → R1 (G0/0)
+R1         (G0/1) → R2 (G0/1)   ← enlace WAN R1-R2
+R2         (G0/0) → SW2 (G0/1)
+SW2        (Fa0/1) → PC-RRHH    (Fa0)
+SW2        (Fa0/2) → PC-Gerencia (Fa0)
+R2         (G0/2) → R3 (G0/0)   ← enlace WAN R2-R3
 ```
 
+> Todos los cables son Copper Straight-Through.
+> R3 no tiene LAN conectada en este laboratorio.
+
 ### Paso 2 — Configurar Router R1
+
 ```
 Router> enable
 Router# configure terminal
@@ -218,14 +238,15 @@ R1# copy running-config startup-config
 ```
 
 ### Paso 3 — Configurar Router R2
+
 ```
 Router> enable
 Router# configure terminal
 Router(config)# hostname R2
 
 R2(config)# interface GigabitEthernet0/0
-R2(config-if)# description LAN-TI
-R2(config-if)# ip address 192.168.100.65 255.255.255.224
+R2(config-if)# description LAN-RRHH-Gerencia
+R2(config-if)# ip address 192.168.100.97 255.255.255.240
 R2(config-if)# no shutdown
 R2(config-if)# exit
 
@@ -242,32 +263,21 @@ R2(config-if)# no shutdown
 R2(config-if)# exit
 
 R2(config)# ip route 192.168.100.0 255.255.255.192 192.168.100.121
-R2(config)# ip route 192.168.100.96 255.255.255.240 192.168.100.126
-R2(config)# ip route 192.168.100.112 255.255.255.248 192.168.100.126
+R2(config)# ip route 192.168.100.64 255.255.255.224 192.168.100.121
+R2(config)# ip route 192.168.100.124 255.255.255.252 192.168.100.126
 
 R2(config)# end
 R2# copy running-config startup-config
 ```
 
 ### Paso 4 — Configurar Router R3
+
 ```
 Router> enable
 Router# configure terminal
 Router(config)# hostname R3
 
 R3(config)# interface GigabitEthernet0/0
-R3(config-if)# description LAN-RRHH
-R3(config-if)# ip address 192.168.100.97 255.255.255.240
-R3(config-if)# no shutdown
-R3(config-if)# exit
-
-R3(config)# interface GigabitEthernet0/1
-R3(config-if)# description LAN-Gerencia
-R3(config-if)# ip address 192.168.100.113 255.255.255.248
-R3(config-if)# no shutdown
-R3(config-if)# exit
-
-R3(config)# interface GigabitEthernet0/2
 R3(config-if)# description WAN-hacia-R2
 R3(config-if)# ip address 192.168.100.126 255.255.255.252
 R3(config-if)# no shutdown
@@ -275,6 +285,8 @@ R3(config-if)# exit
 
 R3(config)# ip route 192.168.100.0 255.255.255.192 192.168.100.125
 R3(config)# ip route 192.168.100.64 255.255.255.224 192.168.100.125
+R3(config)# ip route 192.168.100.96 255.255.255.240 192.168.100.125
+R3(config)# ip route 192.168.100.112 255.255.255.248 192.168.100.125
 R3(config)# ip route 192.168.100.120 255.255.255.252 192.168.100.125
 
 R3(config)# end
@@ -316,6 +328,7 @@ Gateway: 192.168.100.113
 ## Verificación
 
 ### Verificar tablas de enrutamiento
+
 ```
 R1# show ip route
 R2# show ip route
@@ -323,44 +336,48 @@ R3# show ip route
 ```
 
 Resultado esperado en R1:
+
 ```
-C    192.168.100.0/26 is directly connected, GigabitEthernet0/0
+C    192.168.100.0/26  is directly connected, GigabitEthernet0/0
 C    192.168.100.120/30 is directly connected, GigabitEthernet0/1
-S    192.168.100.64/27 [1/0] via 192.168.100.122
-S    192.168.100.96/28 [1/0] via 192.168.100.122
+S    192.168.100.64/27  [1/0] via 192.168.100.122
+S    192.168.100.96/28  [1/0] via 192.168.100.122
 S    192.168.100.112/29 [1/0] via 192.168.100.122
 S    192.168.100.124/30 [1/0] via 192.168.100.122
 ```
 
 ### Pruebas de conectividad
 
-Desde PC-Ventas hacer ping a todas las redes:
+Desde PC-Ventas hacer ping a todos los dispositivos:
+
 ```
-ping 192.168.100.1    ← Gateway Ventas (R1)
+ping 192.168.100.1    ← Gateway Ventas (R1 G0/0)
 ping 192.168.100.70   ← PC-TI
 ping 192.168.100.100  ← PC-RRHH
 ping 192.168.100.114  ← PC-Gerencia
 ```
 
-Desde PC-Gerencia hacer ping a todas las redes:
+Desde PC-Gerencia hacer ping a todos los dispositivos:
+
 ```
-ping 192.168.100.113  ← Gateway Gerencia (R3)
+ping 192.168.100.113  ← Gateway Gerencia (R2 G0/0)
 ping 192.168.100.10   ← PC-Ventas
 ping 192.168.100.70   ← PC-TI
 ping 192.168.100.100  ← PC-RRHH
 ```
 
 Verificar el camino con traceroute:
+
 ```
 PC-Ventas> tracert 192.168.100.114
 ```
 
 Resultado esperado:
+
 ```
 1  192.168.100.1    (R1 G0/0)
 2  192.168.100.122  (R2 G0/1)
-3  192.168.100.126  (R3 G0/2)
-4  192.168.100.114  (PC-Gerencia)
+3  192.168.100.114  (PC-Gerencia)
 ```
 
 ### Lista de verificación
@@ -368,7 +385,7 @@ Resultado esperado:
 - [ ] Diseño VLSM correcto sin solapamiento de subredes
 - [ ] R1 tiene ambas interfaces up/up con IPs correctas
 - [ ] R2 tiene las tres interfaces up/up con IPs correctas
-- [ ] R3 tiene las tres interfaces up/up con IPs correctas
+- [ ] R3 tiene su interfaz G0/0 up/up con IP correcta
 - [ ] Cada router tiene rutas estáticas hacia todas las redes remotas
 - [ ] PC-Ventas hace ping a PC-TI
 - [ ] PC-Ventas hace ping a PC-RRHH
@@ -381,6 +398,7 @@ Resultado esperado:
 ## Troubleshooting
 
 ### Ping falla entre subredes distintas
+
 ```
 1. Verificar que las interfaces estén up/up
    R1# show ip interface brief
@@ -395,17 +413,18 @@ Resultado esperado:
    R1# ping 192.168.100.122
 
 5. Verificar que la ruta de regreso exista en el otro router
-   R3# show ip route
+   R2# show ip route
 ```
 
 ### La máscara de una PC está incorrecta
 
-Si una PC tiene máscara /24 en lugar de /26, el tráfico
-no saldrá correctamente porque el host creerá que todos
-están en su misma red. Verificar siempre la máscara exacta
-de cada subred en la tabla de direccionamiento.
+Si una PC tiene máscara /24 en lugar de su máscara correcta,
+el tráfico no saldrá correctamente porque el host creerá que
+todos los dispositivos están en su misma red. Verificar siempre
+la máscara exacta de cada subred en la tabla de direccionamiento.
 
 ### Traceroute no muestra el camino esperado
+
 ```
 1. Verificar que no haya rutas redundantes o incorrectas
    R2# show ip route
@@ -433,12 +452,14 @@ de cada subred en la tabla de direccionamiento.
 
 ## Capturas requeridas
 
+Guarda las siguientes capturas en la carpeta `capturas/`:
+
 | Archivo | Contenido |
 |---------|-----------|
-| topologia.png | Vista general de la topología completa |
+| topologia.png | Vista general de la topología completa en Packet Tracer |
 | vlsm-diseno.png | Tabla de subredes resuelta |
-| r1-route.png | show ip route en R1 |
-| r2-route.png | show ip route en R2 |
-| r3-route.png | show ip route en R3 |
-| ping-ventas-gerencia.png | Ping exitoso PC-Ventas a PC-Gerencia |
+| r1-route.png | Salida de show ip route en R1 |
+| r2-route.png | Salida de show ip route en R2 |
+| r3-route.png | Salida de show ip route en R3 |
+| ping-ventas-gerencia.png | Ping exitoso de PC-Ventas a PC-Gerencia |
 | traceroute.png | Traceroute mostrando el camino completo |
