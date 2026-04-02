@@ -57,7 +57,7 @@ Debido a limitaciones físicas de los routers (número de interfaces Gigabit dis
   * R2 (Cisco 2911)
   * R3 (Cisco 2911)
 
-### 📡 Configuración clave
+###  Configuración clave
 
 * Uso de interfaces `Serial0/0/0`
 * Configuración de **DCE/DTE**
@@ -70,18 +70,18 @@ Se simuló un enlace WAN más realista, similar a entornos empresariales o de pr
 
 ---
 
-## 🛠️ Proceso de troubleshooting
+##  Proceso de troubleshooting
 
 Durante la implementación se presentaron fallas de conectividad, las cuales fueron resueltas mediante un enfoque estructurado:
 
-### 🔍 Problemas detectados
+### Problemas detectados
 
 * Hosts en diferentes subredes conectados a una misma interfaz
 * Gateways incorrectos o inexistentes
 * Interfaces en estado *shutdown*
 * Falta de rutas estáticas de retorno
 
-### 🧪 Metodología aplicada
+### Metodología aplicada
 
 1. Verificación de interfaces:
 
