@@ -1,5 +1,10 @@
 # CCNA Networking Labs
 
+![Status](https://img.shields.io/badge/Estado-En%20progreso-yellow)
+![CCNA](https://img.shields.io/badge/Certificación-CCNA%20200--301-blue)
+![PKT](https://img.shields.io/badge/Packet%20Tracer-8.x-red)
+![GNS3](https://img.shields.io/badge/GNS3-2.x-green)
+
 Repositorio personal de estudio, práctica y documentación para la certificación **Cisco CCNA 200-301**.
 
 Cada tema cubre teoría explicada en mis propias palabras, laboratorios en Packet Tracer y GNS3, y proyectos de red diseñados como escenarios reales de empresa.
