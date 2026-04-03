@@ -512,17 +512,3 @@ SW1(config-if)# no spanning-tree portfast
 | Rapid PVST+ | Convergencia rápida menor a 6 segundos |
 | PortFast | Forwarding inmediato en puertos de acceso |
 | BPDU Guard | Protección contra switches no autorizados |
-
----
-
-## Capturas requeridas
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia.png | Topología con los tres switches y PCs |
-| stp-default-sw1.png | show spanning-tree vlan 10 antes de cambios |
-| stp-root-sw1.png | SW1 como Root Bridge VLAN 10 |
-| stp-root-sw2.png | SW2 como Root Bridge VLAN 30 |
-| rapid-pvst-summary.png | show spanning-tree summary en modo rapid-pvst |
-| portfast-verificacion.png | show spanning-tree interface Fa0/1 portfast |
-| fallo-enlace-recovery.png | Ping recuperándose después del fallo de enlace |
