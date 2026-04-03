@@ -77,6 +77,7 @@ PC-Ventas1   PC-Ventas2  Servidor-Web
 ## Instrucciones
 
 ### Parte 1 — Configurar interfaces de R1
+```cisco
 Router> enable
 Router# configure terminal
 Router(config)# hostname R1
@@ -94,8 +95,10 @@ R1(config-if)# exit
 R1(config)# ip route 0.0.0.0 0.0.0.0 209.165.200.1
 R1(config)# end
 R1# copy running-config startup-config
+```
 
 ### Parte 2 — Configurar el ISP (router simulado)
+```cisco
 Router> enable
 Router# configure terminal
 Router(config)# hostname ISP
@@ -111,6 +114,7 @@ ISP(config-if)# no shutdown
 ISP(config-if)# exit
 ISP(config)# end
 ISP# copy running-config startup-config
+```
 
 > El ISP no necesita ruta hacia la red privada 192.168.1.0/24.
 > Con NAT, desde el ISP solo verá IPs públicas del bloque
@@ -125,12 +129,14 @@ Así el servidor es accesible desde internet siempre con
 la misma IP pública.
 
 #### Paso 1 — Definir las interfaces inside y outside
+```cisco
 R1(config)# interface GigabitEthernet0/0
 R1(config-if)# ip nat inside
 R1(config-if)# exit
 R1(config)# interface GigabitEthernet0/1
 R1(config-if)# ip nat outside
 R1(config-if)# exit
+```
 
 > Esta configuración aplica para todos los tipos de NAT.
 > inside = red interna privada
@@ -138,7 +144,9 @@ R1(config-if)# exit
 > Debe configurarse antes de cualquier regla NAT.
 
 #### Paso 2 — Crear la traducción estática
+```cisco
 R1(config)# ip nat inside source static 192.168.1.100 209.165.200.3
+```
 
 Esto dice:
 - IP privada 192.168.1.100 (Servidor-Web)
@@ -146,7 +154,9 @@ Esto dice:
 - La traducción es permanente y bidireccional
 
 #### Verificar NAT estático
+```cisco
 R1# show ip nat translations
+```
 
 Resultado esperado:
 Pro  Inside global     Inside local       Outside local    Outside global
@@ -160,8 +170,10 @@ Asigna IPs públicas de un pool a dispositivos internos
 de forma temporal cuando inician una conexión.
 
 #### Paso 1 — Crear el pool de IPs públicas
+```cisco
 R1(config)# ip nat pool POOL-PUBLICO 209.165.200.4 209.165.200.5
 netmask 255.255.255.248
+```
 
 > Este pool tiene solo 2 IPs públicas (.4 y .5).
 > Solo 2 dispositivos pueden tener NAT dinámico simultáneamente.
@@ -169,17 +181,22 @@ netmask 255.255.255.248
 > una IP del pool quede libre.
 
 #### Paso 2 — Crear ACL que identifica los hosts internos
+```cisco
 R1(config)# access-list 1 permit 192.168.1.10 0.0.0.1
-
+```
 > 0.0.0.1 como wildcard permite .10 y .11 (PC-Ventas1 y PC-Ventas2).
 > Solo esas dos IPs usarán NAT dinámico.
 
 #### Paso 3 — Vincular ACL con el pool
+```cisco
 R1(config)# ip nat inside source list 1 pool POOL-PUBLICO
+```
 
 #### Verificar NAT dinámico
 Desde PC-Ventas1 hacer ping a 209.165.201.10 y luego:
+```cisco
 R1# show ip nat translations
+```
 
 Resultado esperado:
 Pro  Inside global     Inside local       Outside local      Outside global
@@ -198,27 +215,37 @@ Es el tipo más usado en redes reales.
 #### Opción A — PAT usando la IP de la interfaz WAN
 
 Primero elimina el NAT dinámico anterior para no tener conflictos:
+```cisco
 R1(config)# no ip nat inside source list 1 pool POOL-PUBLICO
 R1(config)# no access-list 1
+```
 
 Crea una nueva ACL que incluya toda la red interna:
+```cisco
 R1(config)# access-list 2 permit 192.168.1.0 0.0.0.255
+```
 
 Configura PAT usando la interfaz WAN como IP pública:
+```cisco
 R1(config)# ip nat inside source list 2 interface GigabitEthernet0/1 overload
+```
 
 > La palabra clave `overload` es lo que activa PAT.
 > Múltiples IPs privadas se traducen a la misma IP pública
 > diferenciadas por el número de puerto.
 
 #### Opción B — PAT usando una IP específica del pool
+```cisco
 R1(config)# ip nat pool POOL-PAT 209.165.200.6 209.165.200.6
 netmask 255.255.255.248
 R1(config)# ip nat inside source list 2 pool POOL-PAT overload
+```
 
 #### Verificar PAT
 Desde PC-Ventas1 y PC-Ventas2 hacer ping simultáneo a 209.165.201.10:
+```cisco
 R1# show ip nat translations
+```
 
 Resultado esperado con PAT:
 Pro  Inside global        Inside local         Outside local        Outside global
@@ -249,11 +276,15 @@ El tráfico debe llegar al Servidor-Web interno (192.168.1.100).
 ## Verificación completa
 
 ### Ver todas las traducciones activas
+```cisco
 R1# show ip nat translations
 R1# show ip nat translations verbose
+```
 
 ### Ver estadísticas NAT
+```cisco
 R1# show ip nat statistics
+```
 
 Resultado esperado:
 Total active translations: 3 (1 static, 2 dynamic; 2 extended)
@@ -262,14 +293,17 @@ Inside interfaces: GigabitEthernet0/0
 Hits: 47  Misses: 3
 
 ### Limpiar traducciones dinámicas para pruebas
+```cisco
 R1# clear ip nat translation *
-
+```
 > Esto elimina las traducciones dinámicas activas.
 > Las traducciones estáticas permanecen siempre.
 
 ### Verificar configuración NAT en las interfaces
+```cisco
 R1# show ip interface GigabitEthernet0/0 | include NAT
 R1# show ip interface GigabitEthernet0/1 | include NAT
+```
 
 Resultado esperado:
 Inbound  access list is not set
@@ -312,8 +346,10 @@ ping 209.165.200.3      <- Servidor Web (via NAT estático)
 ping 209.165.200.2      <- IP pública de R1
 
 Desde R1:
+```cisco
 R1# ping 209.165.201.10
 R1# show ip nat translations
+```
 
 ### Lista de verificación
 
@@ -337,14 +373,22 @@ R1# show ip nat translations
 ### El ping desde la LAN hacia internet falla
 
 Verificar que la ruta por defecto exista
+```cisco
 R1# show ip route static
+```
 Verificar que ip nat inside e outside estén configurados
+```cisco
 R1# show ip interface brief
 R1# show running-config | include ip nat
+```
 Verificar que la ACL coincida con la IP de origen
+```cisco
 R1# show access-lists
+```
 Hacer ping desde el router hacia el ISP
+```cisco
 R1# ping 209.165.200.1
+```
 Si esto falla el problema es de conectividad, no de NAT
 
 
@@ -353,30 +397,38 @@ Si esto falla el problema es de conectividad, no de NAT
 Las traducciones dinámicas duran poco tiempo
 Hacer ping y ejecutar show ip nat translations inmediatamente
 Verificar que la ACL permita la IP de la PC
+```cisco
 R1# show access-lists
+```
 Busca matches en la ACL
 Verificar que ip nat inside source esté configurado
+```cisco
 R1# show running-config | include ip nat inside source
-
+```
 
 ### PC-Externa no puede llegar al servidor interno
 
 Verificar que el NAT estático exista
+```cisco
 R1# show ip nat translations
+```
 Debe aparecer la línea estática sin puertos
 Verificar que el servidor tenga el gateway correcto
 El gateway debe ser 192.168.1.1 (R1)
 Si el servidor no tiene gateway no puede responder
 Verificar que ip nat outside esté en G0/1
+```cisco
 R1# show running-config | section interface GigabitEthernet0/1
+```
 
 
 ### Error al crear el pool NAT
 %Bad mask /29 for address 209.165.200.4
 Solución: usar netmask en lugar de prefix-length
+```cisco
 R1(config)# ip nat pool POOL-PUBLICO 209.165.200.4 209.165.200.5
 netmask 255.255.255.248
-
+```
 ---
 
 ## Comparativa de tipos de NAT
