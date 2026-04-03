@@ -494,16 +494,3 @@ R1(config-router)# default-information originate always
 | auto-cost reference-bandwidth | Ajustar costo para GigabitEthernet |
 
 ---
-
-## Capturas requeridas
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia.png | Vista general de la topología con cuatro routers |
-| r1-ospf-neighbor.png | show ip ospf neighbor en R1 |
-| r1-ip-route-ospf.png | show ip route ospf en R1 |
-| r4-ruta-default.png | show ip route en R4 con ruta O*E2 |
-| r1-ospf-database.png | show ip ospf database en R1 |
-| ping-pc1-pc4.png | Ping exitoso de PC1 a PC4 |
-| traceroute-pc1-pc4.png | Traceroute de PC1 a PC4 |
-| convergencia-ospf.png | show ip route en R1 después de desconectar enlace |
