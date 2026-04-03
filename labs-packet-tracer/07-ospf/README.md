@@ -85,6 +85,7 @@ Todos los routers están en el Area 0
 ### Parte 1 — Configurar interfaces
 
 #### Configurar R1
+```cisco
 Router> enable
 Router# configure terminal
 Router(config)# hostname R1
@@ -105,8 +106,10 @@ R1(config-if)# no shutdown
 R1(config-if)# exit
 R1(config)# end
 R1# copy running-config startup-config
+```
 
 #### Configurar R2
+```cisco
 Router> enable
 Router# configure terminal
 Router(config)# hostname R2
@@ -127,8 +130,10 @@ R2(config-if)# no shutdown
 R2(config-if)# exit
 R2(config)# end
 R2# copy running-config startup-config
+```
 
 #### Configurar R3
+```cisco
 Router> enable
 Router# configure terminal
 Router(config)# hostname R3
@@ -149,8 +154,10 @@ R3(config-if)# no shutdown
 R3(config-if)# exit
 R3(config)# end
 R3# copy running-config startup-config
+```
 
 #### Configurar R4
+```cisco
 Router> enable
 Router# configure terminal
 Router(config)# hostname R4
@@ -171,12 +178,13 @@ R4(config-if)# no shutdown
 R4(config-if)# exit
 R4(config)# end
 R4# copy running-config startup-config
-
+```
 ---
 
 ### Parte 2 — Configurar OSPF
 
 #### Configurar OSPF en R1
+```cisco
 R1(config)# router ospf 1
 R1(config-router)# router-id 1.1.1.1
 R1(config-router)# network 192.168.1.0 0.0.0.255 area 0
@@ -184,8 +192,10 @@ R1(config-router)# network 10.0.12.0 0.0.0.3 area 0
 R1(config-router)# network 10.0.13.0 0.0.0.3 area 0
 R1(config-router)# passive-interface GigabitEthernet0/0
 R1(config-router)# exit
+```
 
 #### Configurar OSPF en R2
+```cisco
 R2(config)# router ospf 1
 R2(config-router)# router-id 2.2.2.2
 R2(config-router)# network 192.168.2.0 0.0.0.255 area 0
@@ -193,8 +203,10 @@ R2(config-router)# network 10.0.12.0 0.0.0.3 area 0
 R2(config-router)# network 10.0.23.0 0.0.0.3 area 0
 R2(config-router)# passive-interface GigabitEthernet0/2
 R2(config-router)# exit
+```
 
 #### Configurar OSPF en R3
+```cisco
 R3(config)# router ospf 1
 R3(config-router)# router-id 3.3.3.3
 R3(config-router)# network 192.168.3.0 0.0.0.255 area 0
@@ -202,8 +214,10 @@ R3(config-router)# network 10.0.13.0 0.0.0.3 area 0
 R3(config-router)# network 10.0.34.0 0.0.0.3 area 0
 R3(config-router)# passive-interface GigabitEthernet0/2
 R3(config-router)# exit
+```
 
 #### Configurar OSPF en R4
+```cisco
 R4(config)# router ospf 1
 R4(config-router)# router-id 4.4.4.4
 R4(config-router)# network 192.168.4.0 0.0.0.255 area 0
@@ -211,26 +225,31 @@ R4(config-router)# network 10.0.23.0 0.0.0.3 area 0
 R4(config-router)# network 10.0.34.0 0.0.0.3 area 0
 R4(config-router)# passive-interface GigabitEthernet0/2
 R4(config-router)# exit
+```
 
 #### Guardar configuración en todos
+```cisco
 R1# copy running-config startup-config
 R2# copy running-config startup-config
 R3# copy running-config startup-config
 R4# copy running-config startup-config
-
+```
 ---
 
 ### Parte 3 — Propagar ruta por defecto
 
 R1 simula tener salida a internet. Propaga la ruta por defecto
 a todos los demás routers del área OSPF.
+```cisco
 R1(config)# ip route 0.0.0.0 0.0.0.0 209.165.200.1
 R1(config)# router ospf 1
 R1(config-router)# default-information originate
 R1(config-router)# exit
-
+```
 Verificar que R4 aprende la ruta por defecto:
+```cisco
 R4# show ip route
+```
 
 Busca la línea:
 O*E2  0.0.0.0/0 [110/1] via 10.0.23.2
@@ -245,11 +264,14 @@ referencia para que GigabitEthernet tenga costo 1 y
 FastEthernet tenga costo 10.
 
 #### Método 1 — Cambiar el ancho de banda de referencia
+```cisco
 R1(config)# router ospf 1
 R1(config-router)# auto-cost reference-bandwidth 1000
 R1(config-router)# exit
+```
 
 Repite en todos los routers:
+```cisco
 R2(config)# router ospf 1
 R2(config-router)# auto-cost reference-bandwidth 1000
 R2(config-router)# exit
@@ -259,21 +281,25 @@ R3(config-router)# exit
 R4(config)# router ospf 1
 R4(config-router)# auto-cost reference-bandwidth 1000
 R4(config-router)# exit
+```
 
 > Debe configurarse igual en TODOS los routers del área.
 > Si no coincide, los cálculos de SPF serán inconsistentes.
 
 #### Método 2 — Configurar costo manualmente en una interfaz
+```cisco
 R1(config)# interface GigabitEthernet0/1
 R1(config-if)# ip ospf cost 10
 R1(config-if)# exit
-
+```
 ---
 
 ## Verificación
 
 ### Verificar adyacencias OSPF
+```cisco
 R1# show ip ospf neighbor
+```
 
 Resultado esperado en R1:
 Neighbor ID   Pri  State     Dead Time  Address      Interface
@@ -283,7 +309,9 @@ Neighbor ID   Pri  State     Dead Time  Address      Interface
 > El estado debe ser FULL. Cualquier otro estado indica un problema.
 
 ### Verificar tabla de enrutamiento OSPF
+```cisco
 R1# show ip route ospf
+```
 
 Resultado esperado en R1:
 O     192.168.2.0/24 [110/2] via 10.0.12.2, GigabitEthernet0/1
@@ -293,17 +321,23 @@ O     10.0.23.0/30   [110/2] via 10.0.12.2, GigabitEthernet0/1
 O     10.0.34.0/30   [110/2] via 10.0.13.3, GigabitEthernet0/2
 
 ### Verificar base de datos OSPF
+```cisco
 R1# show ip ospf database
+```
 
 Todos los routers del área deben tener la misma LSDB.
 
 ### Verificar detalles de OSPF
+```cisco
 R1# show ip ospf
 R1# show ip ospf interface GigabitEthernet0/1
 R1# show ip protocols
+```
 
 ### Verificar ruta por defecto propagada
+```cisco
 R4# show ip route
+```
 
 Busca:
 O*E2  0.0.0.0/0 [110/1] via ...
@@ -311,13 +345,17 @@ O*E2  0.0.0.0/0 [110/1] via ...
 ### Pruebas de conectividad
 
 Desde PC1 hacer ping a todas las LANs:
+```bash
 ping 192.168.1.1    <- Gateway R1
 ping 192.168.2.10   <- PC2
 ping 192.168.3.10   <- PC3
 ping 192.168.4.10   <- PC4
+```
 
 Traceroute desde PC1 a PC4:
+```bash
 PC1> tracert 192.168.4.10
+```
 
 Resultado esperado:
 1   192.168.1.1    <- R1
@@ -330,15 +368,17 @@ Resultado esperado:
 OSPF debe recalcular rutas automáticamente si un enlace falla.
 
 1. Anotar la ruta actual de R1 a 192.168.4.0:
+```cisco
 R1# show ip route 192.168.4.0
+```
+3. Desconectar el enlace R1-R2 en Packet Tracer
 
-2. Desconectar el enlace R1-R2 en Packet Tracer
+4. Esperar convergencia (menos de 10 segundos con OSPF)
 
-3. Esperar convergencia (menos de 10 segundos con OSPF)
-
-4. Verificar la nueva ruta:
+5. Verificar la nueva ruta:
+```cisco
 R1# show ip route 192.168.4.0
-
+```
 La ruta ahora debe ir por R3 en lugar de R2.
 
 5. Reconectar el enlace y verificar que vuelve a la ruta original.
@@ -364,16 +404,26 @@ La ruta ahora debe ir por R3 en lugar de R2.
 ### Las adyacencias no se forman
 
 Verificar que las interfaces estén up/up en ambos extremos
+```cisco
 R1# show ip interface brief
+```
 Verificar que el area ID coincida en ambos extremos
+```cisco
 R1# show ip ospf interface GigabitEthernet0/1
+```
 Verificar que los hello/dead timers coincidan
+```cisco
 R1# show ip ospf interface GigabitEthernet0/1
+```
 Busca: Timer intervals configured
 Verificar que la red esté incluida en el comando network
+```cisco
 R1# show running-config | section router ospf
+```
 Verificar que no haya passive-interface en un enlace entre routers
+```cisco
 R1# show ip protocols
+```
 
 
 ### El vecino aparece en estado INIT o 2-WAY en lugar de FULL
@@ -388,30 +438,43 @@ Busca: Network Type
 ### Una red no aparece en la tabla OSPF
 
 Verificar que el comando network incluya esa red
+```cisco
 R2# show running-config | section router ospf
+```
 Verificar que la interfaz no sea passive
+```cisco
 R2# show ip protocols
+```
 Verificar que la adyacencia con el vecino que tiene esa red esté FULL
+```cisco
 R2# show ip ospf neighbor
+```
 
 
 ### El Router ID no es el configurado manualmente
 OSPF toma el Router ID al iniciar el proceso.
 Si ya estaba corriendo cuando configuraste el router-id
 debes reiniciar el proceso OSPF:
+```cisco
 R1# clear ip ospf process
+```
 Responde yes cuando pregunte
 
 ### La ruta por defecto no aparece en los demás routers
 
 Verificar que R1 tenga la ruta estática por defecto
+```cisco
 R1# show ip route static
+```
 Verificar que default-information originate esté configurado
+```cisco
 R1# show running-config | section router ospf
+```
 Si la ruta estática no existe agregar always al comando:
+```cisco
 R1(config)# router ospf 1
 R1(config-router)# default-information originate always
-
+```
 
 ---
 
