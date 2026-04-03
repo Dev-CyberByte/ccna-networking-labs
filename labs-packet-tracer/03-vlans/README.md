@@ -395,15 +395,4 @@ PC-TI1     ping 192.168.30.10   ← PC-RRHH1    ✗ debe fallar
 | VLAN de administración | VLAN 99 para gestionar los switches |
 | Dominio de broadcast | Cada VLAN es su propio dominio |
 
----
 
-## Capturas requeridas
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia.png | Vista general de la topología en Packet Tracer |
-| sw1-vlan-brief.png | show vlan brief en SW1 |
-| sw2-vlan-brief.png | show vlan brief en SW2 |
-| sw1-trunk.png | show interfaces trunk en SW1 |
-| ping-misma-vlan.png | Ping exitoso entre PCs de la misma VLAN |
-| ping-diferente-vlan.png | Ping fallido entre PCs de VLANs distintas |
