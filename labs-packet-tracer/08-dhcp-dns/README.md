@@ -82,6 +82,7 @@ Servidor DNS: 192.168.99.100 (PC en VLAN 99)
 ### Parte 1 — Configurar SW1
 
 #### Paso 1 — Crear VLANs y puertos de acceso
+```cisco
 Switch> enable
 Switch# configure terminal
 Switch(config)# hostname SW1
@@ -118,8 +119,10 @@ SW1(config-if)# switchport access vlan 20
 SW1(config-if)# description PC-TI2
 SW1(config-if)# no shutdown
 SW1(config-if)# exit
+```
 
 #### Paso 2 — Configurar trunk hacia R1
+```cisco
 SW1(config)# interface GigabitEthernet0/1
 SW1(config-if)# description Trunk-hacia-R1
 SW1(config-if)# switchport mode trunk
@@ -127,8 +130,10 @@ SW1(config-if)# switchport trunk native vlan 99
 SW1(config-if)# switchport trunk allowed vlan 10,20,99
 SW1(config-if)# no shutdown
 SW1(config-if)# exit
+```
 
 #### Paso 3 — Configurar interfaz de administración
+```cisco
 SW1(config)# interface vlan 99
 SW1(config-if)# ip address 192.168.99.2 255.255.255.0
 SW1(config-if)# no shutdown
@@ -136,10 +141,11 @@ SW1(config-if)# exit
 SW1(config)# ip default-gateway 192.168.99.1
 SW1(config)# end
 SW1# copy running-config startup-config
-
+```
 ---
 
 ### Parte 2 — Configurar SW2
+```cisco
 Switch> enable
 Switch# configure terminal
 Switch(config)# hostname SW2
@@ -175,12 +181,13 @@ SW2(config-if)# exit
 SW2(config)# ip default-gateway 192.168.99.1
 SW2(config)# end
 SW2# copy running-config startup-config
-
+```
 ---
 
 ### Parte 3 — Configurar R1
 
 #### Paso 1 — Configurar subinterfaces
+```cisco
 Router> enable
 Router# configure terminal
 Router(config)# hostname R1
@@ -213,11 +220,14 @@ R1(config-subif)# description Gateway-RRHH
 R1(config-subif)# encapsulation dot1Q 30
 R1(config-subif)# ip address 192.168.30.1 255.255.255.0
 R1(config-subif)# exit
+```
 
 #### Paso 2 — Configurar exclusiones DHCP
+```cisco
 R1(config)# ip dhcp excluded-address 192.168.10.1 192.168.10.10
 R1(config)# ip dhcp excluded-address 192.168.20.1 192.168.20.10
 R1(config)# ip dhcp excluded-address 192.168.30.1 192.168.30.10
+```
 
 > Siempre excluye antes de crear el pool.
 > Las IPs excluidas nunca serán asignadas por DHCP.
@@ -225,6 +235,7 @@ R1(config)# ip dhcp excluded-address 192.168.30.1 192.168.30.10
 > de red con IPs estáticas.
 
 #### Paso 3 — Configurar pools DHCP
+```cisco
 R1(config)# ip dhcp pool POOL-VENTAS
 R1(dhcp-config)# network 192.168.10.0 255.255.255.0
 R1(dhcp-config)# default-router 192.168.10.1
@@ -243,21 +254,25 @@ R1(dhcp-config)# default-router 192.168.30.1
 R1(dhcp-config)# dns-server 192.168.99.100
 R1(dhcp-config)# lease 1
 R1(dhcp-config)# exit
+```
 
 #### Paso 4 — Guardar configuración
+```cisco
 R1(config)# end
 R1# copy running-config startup-config
-
+```
 ---
 
 ### Parte 4 — Configurar DHCP Relay
 
+```cisco
 SW2 está en una red distinta al servidor DHCP (R1).
 Las PCs de VLAN 30 no podrán obtener IP porque los broadcasts
 DHCP no cruzan redes. El relay reenvía esos broadcasts a R1.
 R1(config)# interface GigabitEthernet0/1.30
 R1(config-subif)# ip helper-address 192.168.30.1
 R1(config-subif)# exit
+```
 
 > En este lab el servidor DHCP está en el mismo router
 > que el gateway, por lo que el relay es interno.
@@ -309,8 +324,9 @@ Resultado esperado:
 ## Verificación
 
 ### Verificar pools DHCP en R1
+```cisco
 R1# show ip dhcp pool
-
+```
 Resultado esperado:
 Pool POOL-VENTAS :
 Utilization mark (high/low)    : 100 / 0
@@ -321,7 +337,9 @@ Pending event                  : none
 1 subnet is currently in the free pool
 
 ### Verificar concesiones activas
+```cisco
 R1# show ip dhcp binding
+```
 
 Resultado esperado:
 IP address      Client-ID/              Lease expiration        Type
@@ -331,12 +349,16 @@ Hardware address
 192.168.20.11   0060.7C34.DEF0          Mar 01 2025 12:00 AM    Automatic
 
 ### Verificar conflictos DHCP
+```cisco
 R1# show ip dhcp conflict
+```
 
 Si no hay conflictos no aparece nada. Eso es lo esperado.
 
 ### Verificar estadísticas DHCP
+```cisco
 R1# show ip dhcp server statistics
+```
 
 Busca que los contadores de Discover, Offer, Request y ACK
 tengan valores mayores a cero.
@@ -354,10 +376,12 @@ Si el DNS funciona el ping resolverá el nombre a IP
 antes de enviar los paquetes.
 
 ### Pruebas de conectividad
+```bash
 PC-Ventas1> ping 192.168.20.11    <- PC-TI1
 PC-Ventas1> ping 192.168.30.11    <- PC-RRHH1
 PC-TI1>     ping 192.168.30.11    <- PC-RRHH1
 PC-RRHH1>   ping 192.168.99.100   <- Servidor DNS
+```
 
 ### Lista de verificación
 
@@ -381,16 +405,25 @@ PC-RRHH1>   ping 192.168.99.100   <- Servidor DNS
 ### La PC no obtiene IP por DHCP
 
 Verificar que el pool DHCP exista en R1
+```cisco
 R1# show ip dhcp pool
+```
 Verificar que la subinterfaz del gateway esté up/up
+```cisco
 R1# show ip interface brief
+```
 Verificar que el trunk esté activo y permita la VLAN
+```cisco
 SW1# show interfaces trunk
+```
 Verificar que el puerto de la PC esté en la VLAN correcta
+```cisco
 SW1# show vlan brief
+```
 Verificar que no haya conflicto de IPs
+```cisco
 R1# show ip dhcp conflict
-
+```
 
 ### La PC obtuvo IP 169.254.x.x (APIPA)
 Esto significa que el proceso DORA falló completamente.
@@ -411,7 +444,9 @@ Las PCs deben estar en modo DHCP en IP Configuration
 Ve a Desktop → IP Configuration → DHCP
 Espera 5-10 segundos para que complete el proceso DORA
 Verificar que la exclusión no cubra todo el rango
+```cisco
 R1# show running-config | include excluded
+```
 Si excluded-address es .1 a .254 no quedan IPs para asignar
 
 
