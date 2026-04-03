@@ -73,6 +73,8 @@ Las tres VLANs 10, 20 y 30 viajan por todos los trunks.
 ### Parte 1 — Configuración base de los switches
 
 #### Configurar SW1
+
+```cisco
 Switch> enable
 Switch# configure terminal
 Switch(config)# hostname SW1
@@ -110,8 +112,11 @@ SW1(config-if)# no shutdown
 SW1(config-if)# exit
 SW1(config)# end
 SW1# copy running-config startup-config
+```
 
 #### Configurar SW2
+
+```cisco
 Switch> enable
 Switch# configure terminal
 Switch(config)# hostname SW2
@@ -161,8 +166,12 @@ SW2(config-if)# no shutdown
 SW2(config-if)# exit
 SW2(config)# end
 SW2# copy running-config startup-config
+```
+
 
 #### Configurar SW3
+
+```cisco
 Switch> enable
 Switch# configure terminal
 Switch(config)# hostname SW3
@@ -206,7 +215,7 @@ SW3(config-if)# no shutdown
 SW3(config-if)# exit
 SW3(config)# end
 SW3# copy running-config startup-config
-
+```
 ---
 
 ### Parte 2 — Observar STP por defecto
@@ -215,9 +224,12 @@ Antes de cambiar nada observa cómo STP elige el Root Bridge
 automáticamente con la configuración por defecto.
 
 #### Paso 1 — Ver el estado STP en cada switch
+
+```cisco
 SW1# show spanning-tree vlan 10
 SW2# show spanning-tree vlan 10
 SW3# show spanning-tree vlan 10
+```
 
 #### Paso 2 — Identificar quién es el Root Bridge
 
@@ -246,8 +258,9 @@ Estados posibles: Forwarding / Blocking
 #### Paso 4 — Identificar el puerto bloqueado
 El puerto bloqueado es el que STP eligió para cortar el loop.
 Solo uno de los seis puertos trunk estará en estado Blocking.
+```cisco
 SW1# show spanning-tree vlan 10 detail
-
+```
 Busca la línea:
 Status: BLK
 
@@ -256,11 +269,15 @@ Status: BLK
 ### Parte 3 — Manipular el Root Bridge
 
 #### Paso 1 — Forzar SW1 como Root Bridge de VLAN 10 y 20
+```cisco
 SW1(config)# spanning-tree vlan 10 priority 4096
 SW1(config)# spanning-tree vlan 20 priority 4096
+```
 
 #### Paso 2 — Forzar SW2 como Root Bridge de VLAN 30
+```cisco
 SW2(config)# spanning-tree vlan 30 priority 4096
+```
 
 > Usar prioridades en múltiplos de 4096.
 > Valores válidos: 0, 4096, 8192, 12288, 16384, 20480, 24576,
@@ -269,18 +286,22 @@ SW2(config)# spanning-tree vlan 30 priority 4096
 
 #### Paso 3 — Usar el comando macro para Root Bridge
 Cisco tiene un comando que ajusta la prioridad automáticamente:
+```cisco
 SW1(config)# spanning-tree vlan 10 root primary
 SW1(config)# spanning-tree vlan 20 root primary
 SW2(config)# spanning-tree vlan 30 root primary
+```
 
 > `root primary` ajusta la prioridad a 24576 o menos si hay
 > otro switch con prioridad más baja.
 > `root secondary` ajusta a 28672 para ser el respaldo.
 
 #### Paso 4 — Verificar la nueva elección
+```cisco
 SW1# show spanning-tree vlan 10
 SW1# show spanning-tree vlan 20
 SW2# show spanning-tree vlan 30
+```
 
 Confirmar que aparezca:
 This bridge is the root
@@ -292,13 +313,17 @@ en SW1 para VLANs 10 y 20, y en SW2 para VLAN 30.
 ### Parte 4 — Migrar a Rapid PVST+
 
 #### Paso 1 — Cambiar el modo STP en los tres switches
+```cisco
 SW1(config)# spanning-tree mode rapid-pvst
 SW2(config)# spanning-tree mode rapid-pvst
 SW3(config)# spanning-tree mode rapid-pvst
+```
 
 #### Paso 2 — Configurar PortFast en puertos de acceso
 PortFast permite que los puertos conectados a dispositivos finales
 pasen directamente a Forwarding sin esperar los 30 segundos de STP.
+
+```cisco
 SW2(config)# interface FastEthernet0/1
 SW2(config-if)# spanning-tree portfast
 SW2(config-if)# exit
@@ -308,6 +333,7 @@ SW2(config-if)# exit
 SW3(config)# interface FastEthernet0/1
 SW3(config-if)# spanning-tree portfast
 SW3(config-if)# exit
+```
 
 > PortFast NUNCA se configura en puertos trunk.
 > Solo en puertos conectados a dispositivos finales (PCs, servidores).
@@ -315,6 +341,8 @@ SW3(config-if)# exit
 #### Paso 3 — Configurar BPDU Guard
 BPDU Guard deshabilita el puerto si recibe un BPDU.
 Protege los puertos PortFast de switches no autorizados.
+
+```cisco
 SW2(config)# interface FastEthernet0/1
 SW2(config-if)# spanning-tree bpduguard enable
 SW2(config-if)# exit
@@ -324,34 +352,46 @@ SW2(config-if)# exit
 SW3(config)# interface FastEthernet0/1
 SW3(config-if)# spanning-tree bpduguard enable
 SW3(config-if)# exit
+```
 
 #### Paso 4 — Guardar configuración en todos los switches
+```cisco
 SW1# copy running-config startup-config
 SW2# copy running-config startup-config
 SW3# copy running-config startup-config
+```
 
 ---
 
 ## Verificación
 
 ### Verificar Root Bridge por VLAN
+
+```cisco
 SW1# show spanning-tree vlan 10
 SW1# show spanning-tree vlan 20
 SW2# show spanning-tree vlan 30
+```
 
 ### Verificar modo Rapid PVST+
+```cisco
 SW1# show spanning-tree summary
+```
 
 Resultado esperado:
 Switch is in rapid-pvst mode
 Root bridge for: VLAN0010, VLAN0020
 
 ### Verificar PortFast y BPDU Guard
+```cisco
 SW2# show spanning-tree interface FastEthernet0/1 portfast
 SW2# show spanning-tree interface FastEthernet0/1 detail
+```
 
 ### Verificar todos los puertos STP
+```cisco
 SW1# show spanning-tree vlan 10 brief
+```
 
 Resultado esperado:
 VLAN0010
@@ -373,7 +413,9 @@ PC-Ventas> ping 192.168.30.10
 Haz clic en el cable entre SW1 y SW2 y elimínalo.
 
 #### Paso 3 — Verificar que STP converge
+```cisco
 SW2# show spanning-tree vlan 10
+```
 
 El puerto que estaba en Blocking debe pasar a Forwarding
 automáticamente en menos de 6 segundos con Rapid PVST+.
@@ -404,37 +446,46 @@ Vuelve a conectar SW1-SW2 y observa cómo STP recalcula.
 ### El Root Bridge no es el esperado
 
 Verificar la prioridad configurada
+```cisco
 SW1# show spanning-tree vlan 10 | include Priority
+```
 Verificar que la prioridad sea menor que los demás switches
 Todos los switches tienen 32768 por defecto
 SW1 debe tener 4096 para ganar
-Reconfigurar si es necesario
+Reconfigurar si es necesario}
+```cisco
 SW1(config)# spanning-tree vlan 10 priority 4096
-
+```
 
 ### Un puerto no pasa a Forwarding
 
 Verificar el estado del puerto
+```cisco
 SW2# show spanning-tree vlan 10
+```
 Verificar que no haya inconsistencia de VLAN nativa
 Una inconsistencia bloquea el puerto indefinidamente
 Verificar los costos de los enlaces
+```cisco
 SW2# show spanning-tree vlan 10 detail
-
+```
 
 ### BPDU Guard deshabilitó un puerto
 Síntoma: el puerto está en estado err-disabled
 
 Verificar cuál puerto fue deshabilitado
+```cisco
 SW2# show interfaces status err-disabled
+```
 Identificar por qué recibió un BPDU
 Probablemente hay un switch conectado donde no debe haber uno
 Resolver el problema físico primero
 Rehabilitar el puerto
+```cisco
 SW2(config)# interface FastEthernet0/1
 SW2(config-if)# shutdown
 SW2(config-if)# no shutdown
-
+```
 
 ### PortFast genera warning en la consola
 %SPANTREE-2-PORTFAST_TRUNK: PortFast has been configured
@@ -442,9 +493,10 @@ on GigabitEthernet0/1 which is in trunking mode.
 
 Esto significa que configuraste PortFast en un puerto trunk.
 PortFast solo va en puertos de acceso conectados a dispositivos finales.
+```cisco
 SW1(config)# interface GigabitEthernet0/1
 SW1(config-if)# no spanning-tree portfast
-
+```
 ---
 
 ## Conceptos aplicados en este lab
