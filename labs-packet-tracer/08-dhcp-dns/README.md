@@ -476,16 +476,3 @@ PC> ping 192.168.99.100
 | show ip dhcp binding | Verificar concesiones activas |
 
 ---
-
-## Capturas requeridas
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia.png | Vista general de la topología |
-| r1-dhcp-pool.png | show ip dhcp pool en R1 |
-| r1-dhcp-binding.png | show ip dhcp binding con concesiones activas |
-| pc-ventas1-dhcp.png | IP Configuration de PC-Ventas1 con IP obtenida |
-| pc-ti1-dhcp.png | IP Configuration de PC-TI1 con IP obtenida |
-| pc-rrhh1-dhcp.png | IP Configuration de PC-RRHH1 con IP obtenida |
-| dns-registros.png | Registros A configurados en el servidor DNS |
-| ping-dns-nombre.png | Ping exitoso usando nombre DNS |
