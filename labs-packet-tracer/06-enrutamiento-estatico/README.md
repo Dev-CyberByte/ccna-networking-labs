@@ -372,17 +372,3 @@ R1# ping 10.0.1.5
 | Distancia Administrativa | AD 1 principal, AD 5 flotante |
 | Tabla de enrutamiento | show ip route en cada router |
 | Traceroute | Verificar el camino completo |
-
----
-
-## Capturas requeridas
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia.png | Vista general de la topología completa |
-| r1-route.png | show ip route en R1 con todas las rutas |
-| r2-route.png | show ip route en R2 |
-| r3-route.png | show ip route en R3 |
-| ping-norte-sur.png | Ping exitoso PC-Norte a PC-Sur |
-| traceroute-norte-sur.png | Traceroute de PC-Norte a PC-Sur |
-| ruta-flotante-activa.png | show ip route en R1 con ruta flotante activa |
