@@ -449,18 +449,3 @@ SW-L3(config-vlan)# name Ventas
 | SVI | Método 2 con switch capa 3 |
 | ip routing | Habilitar enrutamiento en switch L3 |
 | Inter-VLAN routing | Comunicación entre VLANs distintas |
-
----
-
-## Capturas requeridas
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia-ros.png | Topología Router on a Stick |
-| topologia-svi.png | Topología Switch capa 3 |
-| r1-subinterfaces.png | show ip interface brief en R1 |
-| r1-route.png | show ip route en R1 |
-| swl3-route.png | show ip route en SW-L3 |
-| ping-ventas-ti.png | Ping exitoso PC-Ventas1 a PC-TI1 |
-| ping-ventas-rrhh.png | Ping exitoso PC-Ventas1 a PC-RRHH1 |
-| traceroute.png | Traceroute mostrando el gateway como primer salto |
