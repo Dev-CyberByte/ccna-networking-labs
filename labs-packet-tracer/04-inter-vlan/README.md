@@ -1,142 +1,466 @@
-# Inter-VLAN Routing Lab
+# Lab 04 — Inter-VLAN Routing
 
-This lab focuses on configuring inter-VLAN routing using Cisco Packet Tracer.
+## Información del lab
 
-## Objectives
+| Campo | Detalle |
+|-------|---------|
+| Tema CCNA | Acceso de red — Dominio 2.1 y 2.3 |
+| Dificultad | ⭐⭐ Intermedio |
+| Duración estimada | 50 minutos |
+| Archivo | lab-04-inter-vlan.pkt |
+| Teoría relacionada | [teoria/02-acceso-de-red/vlans-trunking-stp.md](../../teoria/02-acceso-de-red/vlans-trunking-stp.md) |
+| Lab anterior | [Lab 03 — VLANs y Trunking](../03-vlans/README.md) |
 
-- Configure VLANs
-- Implement inter-VLAN routing
-- Troubleshoot inter-VLAN routing issues
+---
 
-## Requirements
+## Objetivo
 
-- Cisco Packet Tracer
-- Switches and Routers
+Configurar comunicación entre VLANs usando dos métodos distintos:
+Router on a Stick con un router externo y Switch Virtual Interfaces
+con un switch de capa 3. Verificar que los dispositivos de distintas
+VLANs puedan comunicarse entre sí a través del router.
 
-## VLAN Configuration
+---
 
-### Step 1: Create VLANs on Switch
+## Escenario
 
-```console
-Switch# configure terminal
-Switch(config)# vlan 10
-Switch(config-vlan)# name Accounting
-Switch(config-vlan)# exit
+Continuando con **TechStart S.A.** del lab anterior. Las VLANs ya están
+segmentadas pero ahora los departamentos necesitan comunicarse entre sí
+de forma controlada. Se implementarán ambos métodos para comparar.
 
-Switch(config)# vlan 20
-Switch(config-vlan)# name Sales
-Switch(config-vlan)# exit
+| VLAN | Nombre | Red | Gateway |
+|------|--------|-----|---------|
+| 10 | Ventas | 192.168.10.0/24 | 192.168.10.1 |
+| 20 | TI | 192.168.20.0/24 | 192.168.20.1 |
+| 30 | RRHH | 192.168.30.0/24 | 192.168.30.1 |
+| 99 | Administracion | 192.168.99.0/24 | 192.168.99.1 |
 
-Switch(config)# interface range FastEthernet 0/1-10
-Switch(config-if-range)# switchport mode access
-Switch(config-if-range)# switchport access vlan 10
-Switch(config-if-range)# exit
+---
 
-Switch(config)# interface range FastEthernet 0/11-20
-Switch(config-if-range)# switchport mode access
-Switch(config-if-range)# switchport access vlan 20
-Switch(config-if-range)# exit
+## Topología — Método 1: Router on a Stick
+```bash
+PC-Ventas1   PC-TI1   PC-RRHH1
+│            │         │
+Fa0/1       Fa0/2     Fa0/3
+└───────────┴─────────┘
+SW1
+(G0/1 trunk)
+│
+G0/0
+R1
+G0/0.10  → VLAN 10 → 192.168.10.1
+G0/0.20  → VLAN 20 → 192.168.20.1
+G0/0.30  → VLAN 30 → 192.168.30.1
+G0/0.99  → VLAN 99 → 192.168.99.1
 
-Switch(config)# end
+```
+---
+
+## Tabla de direccionamiento — Método 1
+
+| Dispositivo | Interfaz | Dirección IP | Máscara | VLAN |
+|-------------|----------|-------------|---------|------|
+| R1 | G0/0.10 | 192.168.10.1 | 255.255.255.0 | 10 |
+| R1 | G0/0.20 | 192.168.20.1 | 255.255.255.0 | 20 |
+| R1 | G0/0.30 | 192.168.30.1 | 255.255.255.0 | 30 |
+| R1 | G0/0.99 | 192.168.99.1 | 255.255.255.0 | 99 |
+| SW1 | VLAN 99 | 192.168.99.2 | 255.255.255.0 | 99 |
+| PC-Ventas1 | NIC | 192.168.10.10 | 255.255.255.0 | 10 |
+| PC-TI1 | NIC | 192.168.20.10 | 255.255.255.0 | 20 |
+| PC-RRHH1 | NIC | 192.168.30.10 | 255.255.255.0 | 30 |
+
+---
+
+## Instrucciones — Método 1: Router on a Stick
+
+### Parte 1 — Configurar SW1
+
+#### Paso 1 — Crear VLANs (si no vienen del lab anterior)
+
+```cisco
+SW1(config)# vlan 10
+SW1(config-vlan)# name Ventas
+SW1(config-vlan)# exit
+SW1(config)# vlan 20
+SW1(config-vlan)# name TI
+SW1(config-vlan)# exit
+SW1(config)# vlan 30
+SW1(config-vlan)# name RRHH
+SW1(config-vlan)# exit
+SW1(config)# vlan 99
+SW1(config-vlan)# name Administracion
+SW1(config-vlan)# exit
+```
+#### Paso 2 — Configurar puertos de acceso
+```cisco
+SW1(config)# interface FastEthernet0/1
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 10
+SW1(config-if)# description PC-Ventas1
+SW1(config-if)# no shutdown
+SW1(config-if)# exit
+SW1(config)# interface FastEthernet0/2
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 20
+SW1(config-if)# description PC-TI1
+SW1(config-if)# no shutdown
+SW1(config-if)# exit
+SW1(config)# interface FastEthernet0/3
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 30
+SW1(config-if)# description PC-RRHH1
+SW1(config-if)# no shutdown
+SW1(config-if)# exit
 ```
 
-## Inter-VLAN Routing Configuration
+#### Paso 3 — Configurar trunk hacia R1
+```cisco
+SW1(config)# interface GigabitEthernet0/1
+SW1(config-if)# description Trunk-hacia-R1
+SW1(config-if)# switchport mode trunk
+SW1(config-if)# switchport trunk native vlan 99
+SW1(config-if)# switchport trunk allowed vlan 10,20,30,99
+SW1(config-if)# no shutdown
+SW1(config-if)# exit
+```
 
-### Step 2: Configure Router for Inter-VLAN Routing
+#### Paso 4 — Configurar interfaz de administración
+```cisco
+SW1(config)# interface vlan 99
+SW1(config-if)# ip address 192.168.99.2 255.255.255.0
+SW1(config-if)# no shutdown
+SW1(config-if)# exit
+SW1(config)# ip default-gateway 192.168.99.1
+SW1(config)# end
+SW1# copy running-config startup-config
+```
+---
 
-```console
+### Parte 2 — Configurar R1 (Router on a Stick)
+
+#### Paso 1 — Configuración básica
+```cisco
+Router> enable
 Router# configure terminal
-Router(config)# interface GigabitEthernet 0/1
-Router(config-if)# no shutdown
-Router(config-if)# ip address 192.168.10.1 255.255.255.0
-Router(config-if)# exit
-
-Router(config)# interface GigabitEthernet 0/2
-Router(config-if)# no shutdown
-Router(config-if)# ip address 192.168.20.1 255.255.255.0
-Router(config-if)# exit
-
-Router(config)# end
+Router(config)# hostname R1
+R1(config)# enable secret Cisco123
+R1(config)# no ip domain-lookup
 ```
 
-### Step 3: Verify Configuration
+#### Paso 2 — Activar la interfaz física
+```cisco
+R1(config)# interface GigabitEthernet0/0
+R1(config-if)# description Trunk-hacia-SW1
+R1(config-if)# no ip address
+R1(config-if)# no shutdown
+R1(config-if)# exit
+```
+> La interfaz física no lleva IP. Las subinterfaces llevan las IPs.
+> Solo necesita estar en no shutdown.
 
-```console
-Router# show ip interface brief
-Interface       IP-Address      OK? Method Status                Protocol
-Gi0/1          192.168.10.1    YES manual up                    up
-Gi0/2          192.168.20.1    YES manual up                    up
+#### Paso 3 — Crear subinterfaz para VLAN 10
+```cisco
+R1(config)# interface GigabitEthernet0/0.10
+R1(config-subif)# description Gateway-Ventas
+R1(config-subif)# encapsulation dot1Q 10
+R1(config-subif)# ip address 192.168.10.1 255.255.255.0
+R1(config-subif)# exit
+```
+#### Paso 4 — Crear subinterfaz para VLAN 20
+```cisco
+R1(config)# interface GigabitEthernet0/0.20
+R1(config-subif)# description Gateway-TI
+R1(config-subif)# encapsulation dot1Q 20
+R1(config-subif)# ip address 192.168.20.1 255.255.255.0
+R1(config-subif)# exit
+```
+#### Paso 5 — Crear subinterfaz para VLAN 30
+```cisco
+R1(config)# interface GigabitEthernet0/0.30
+R1(config-subif)# description Gateway-RRHH
+R1(config-subif)# encapsulation dot1Q 30
+R1(config-subif)# ip address 192.168.30.1 255.255.255.0
+R1(config-subif)# exit
+```
+#### Paso 6 — Crear subinterfaz para VLAN 99
+```cisco
+R1(config)# interface GigabitEthernet0/0.99
+R1(config-subif)# description Gateway-Administracion
+R1(config-subif)# encapsulation dot1Q 99 native
+R1(config-subif)# ip address 192.168.99.1 255.255.255.0
+R1(config-subif)# exit
+```
+> La palabra clave `native` en la subinterfaz de la VLAN nativa
+> es importante. Debe coincidir con la VLAN nativa del trunk del switch.
 
-Router# show running-config | include interface
-interface GigabitEthernet 0/1
- ip address 192.168.10.1 255.255.255.0
- no shutdown
-!
-interface GigabitEthernet 0/2
- ip address 192.168.20.1 255.255.255.0
- no shutdown
+#### Paso 7 — Guardar configuración
+```cisco
+R1(config)# end
+R1# copy running-config startup-config
+```
+---
+
+## Topología — Método 2: Switch Capa 3 con SVI
+```bash
+PC-Ventas1   PC-TI1   PC-RRHH1
+│            │         │
+Fa0/1       Fa0/2     Fa0/3
+└───────────┴─────────┘
+SW-L3
+(Switch capa 3)
+SVI VLAN 10 → 192.168.10.1
+SVI VLAN 20 → 192.168.20.1
+SVI VLAN 30 → 192.168.30.1
+SVI VLAN 99 → 192.168.99.1
+
+```
+---
+
+## Instrucciones — Método 2: Switch Capa 3 con SVI
+
+### Configurar SW-L3 (Switch Multilayer 3560 o 3650)
+
+#### Paso 1 — Configuración básica y VLANs
+```cisco
+Switch> enable
+Switch# configure terminal
+Switch(config)# hostname SW-L3
+SW-L3(config)# vlan 10
+SW-L3(config-vlan)# name Ventas
+SW-L3(config-vlan)# exit
+SW-L3(config)# vlan 20
+SW-L3(config-vlan)# name TI
+SW-L3(config-vlan)# exit
+SW-L3(config)# vlan 30
+SW-L3(config-vlan)# name RRHH
+SW-L3(config-vlan)# exit
+SW-L3(config)# vlan 99
+SW-L3(config-vlan)# name Administracion
+SW-L3(config-vlan)# exit
+```
+#### Paso 2 — Configurar puertos de acceso
+```cisco
+SW-L3(config)# interface FastEthernet0/1
+SW-L3(config-if)# switchport mode access
+SW-L3(config-if)# switchport access vlan 10
+SW-L3(config-if)# no shutdown
+SW-L3(config-if)# exit
+SW-L3(config)# interface FastEthernet0/2
+SW-L3(config-if)# switchport mode access
+SW-L3(config-if)# switchport access vlan 20
+SW-L3(config-if)# no shutdown
+SW-L3(config-if)# exit
+SW-L3(config)# interface FastEthernet0/3
+SW-L3(config-if)# switchport mode access
+SW-L3(config-if)# switchport access vlan 30
+SW-L3(config-if)# no shutdown
+SW-L3(config-if)# exit
+```
+#### Paso 3 — Crear SVIs (Switch Virtual Interfaces)
+```cisco
+SW-L3(config)# interface vlan 10
+SW-L3(config-if)# description Gateway-Ventas
+SW-L3(config-if)# ip address 192.168.10.1 255.255.255.0
+SW-L3(config-if)# no shutdown
+SW-L3(config-if)# exit
+SW-L3(config)# interface vlan 20
+SW-L3(config-if)# description Gateway-TI
+SW-L3(config-if)# ip address 192.168.20.1 255.255.255.0
+SW-L3(config-if)# no shutdown
+SW-L3(config-if)# exit
+SW-L3(config)# interface vlan 30
+SW-L3(config-if)# description Gateway-RRHH
+SW-L3(config-if)# ip address 192.168.30.1 255.255.255.0
+SW-L3(config-if)# no shutdown
+SW-L3(config-if)# exit
+SW-L3(config)# interface vlan 99
+SW-L3(config-if)# description Administracion
+SW-L3(config-if)# ip address 192.168.99.1 255.255.255.0
+SW-L3(config-if)# no shutdown
+SW-L3(config-if)# exit
+```
+#### Paso 4 — Habilitar enrutamiento IP
+```cisco
+SW-L3(config)# ip routing
 ```
 
-## Network Topology Diagram
+> Este comando es el más importante del método SVI.
+> Sin él el switch no enruta entre VLANs aunque tenga las SVIs.
 
+#### Paso 5 — Guardar configuración
+```cisco
+SW-L3(config)# end
+SW-L3# copy running-config startup-config
 ```
-                    +------------------+
-                    |    Router        |
-                    | Gi0/1  | Gi0/2   |
-                    +--------+---------+
-                       /            \
-                      /              \
-           192.168.10.0/24    192.168.20.0/24
-                  /                      \
-            +------+                   +------+
-            |      |                   |      |
-        +---+---+  |               +---+---+  |
-        |       |  |               |       |  |
-      Switch0 ------ VLAN 10     Switch1 ------ VLAN 20
-        |       |  |               |       |  |
-        | PC-1  |  |               | PC-3  |  |
-        | PC-2  |  |               | PC-4  |  |
-        +-------+  |               +-------+  |
+---
+
+## Verificación
+
+### Método 1 — Router on a Stick
+
+#### Verificar subinterfaces del router
+```cisco
+R1# show ip interface brief
+```
+```bash
+Resultado esperado:
+Interface            IP-Address      OK? Method Status   Protocol
+GigabitEthernet0/0   unassigned      YES manual up       up
+GigabitEthernet0/0.10 192.168.10.1  YES manual up       up
+GigabitEthernet0/0.20 192.168.20.1  YES manual up       up
+GigabitEthernet0/0.30 192.168.30.1  YES manual up       up
+GigabitEthernet0/0.99 192.168.99.1  YES manual up       up
+```
+#### Verificar tabla de enrutamiento
+```cisco
+R1# show ip route
+```
+```bash
+Resultado esperado:
+C    192.168.10.0/24 is directly connected, GigabitEthernet0/0.10
+C    192.168.20.0/24 is directly connected, GigabitEthernet0/0.20
+C    192.168.30.0/24 is directly connected, GigabitEthernet0/0.30
+C    192.168.99.0/24 is directly connected, GigabitEthernet0/0.99
+```
+### Método 2 — Switch Capa 3
+
+#### Verificar SVIs
+```cisco
+SW-L3# show ip interface brief
+```
+#### Verificar que ip routing esté activo
+```cisco
+SW-L3# show ip route
+```
+#### Verificar SVIs individualmente
+```cisco
+SW-L3# show interfaces vlan 10
+SW-L3# show interfaces vlan 20
+```
+### Pruebas de conectividad
+
+#### Pruebas que DEBEN funcionar (inter-VLAN activo)
+```bash
+PC-Ventas1 ping 192.168.20.10   ← PC-TI1      ✓ debe funcionar
+PC-Ventas1 ping 192.168.30.10   ← PC-RRHH1    ✓ debe funcionar
+PC-TI1     ping 192.168.30.10   ← PC-RRHH1    ✓ debe funcionar
+PC-Ventas1 ping 192.168.10.1    ← Gateway R1  ✓ debe funcionar
+```
+#### Traceroute para verificar el camino
+```bash
+PC-Ventas1> tracert 192.168.30.10
+
+Resultado esperado (Router on a Stick):
+1   192.168.10.1   (R1 subinterfaz G0/0.10)
+2   192.168.30.10  (PC-RRHH1)
+```
+### Lista de verificación
+
+- [ ] Subinterfaces G0/0.10, .20, .30 y .99 creadas en R1
+- [ ] Encapsulation dot1Q configurada en cada subinterfaz
+- [ ] Interfaz física G0/0 en no shutdown sin IP
+- [ ] Trunk entre SW1 y R1 activo
+- [ ] PC-Ventas1 hace ping a PC-TI1
+- [ ] PC-Ventas1 hace ping a PC-RRHH1
+- [ ] PC-TI1 hace ping a PC-RRHH1
+- [ ] Traceroute muestra el gateway como primer salto
+- [ ] ip routing habilitado en SW-L3 (método 2)
+- [ ] Configuración guardada en todos los dispositivos
+
+---
+
+## Comparativa entre métodos
+
+| Aspecto | Router on a Stick | Switch Capa 3 SVI |
+|---------|------------------|-------------------|
+| Hardware | Router externo + switch | Solo switch capa 3 |
+| Rendimiento | Limitado por interfaz del router | Mucho más rápido |
+| Costo | Mayor (dos equipos) | Menor (un equipo) |
+| Escalabilidad | Limitada | Alta |
+| Configuración | Subinterfaces + trunk | SVIs + ip routing |
+| Uso típico | Redes pequeñas, laboratorio | Redes empresariales |
+
+---
+
+## Troubleshooting
+
+### Las subinterfaces están down
+
+Verificar que la interfaz física esté en no shutdown
+```cisco
+R1# show interfaces GigabitEthernet0/0
+```
+Verificar que el trunk del switch esté activo
+```cisco
+SW1# show interfaces trunk
+```
+Verificar que el número de VLAN en encapsulation coincida
+```cisco
+R1# show running-config | section interface GigabitEthernet0/0
 ```
 
-## Troubleshooting Common Issues
+### Ping entre VLANs falla con Router on a Stick
 
-### Step 4: Verify Inter-VLAN Connectivity
-
-```console
-PC-1> ping 192.168.20.3
-Reply from 192.168.20.3: bytes=32 time=10ms TTL=63
-Reply from 192.168.20.3: bytes=32 time=10ms TTL=63
+Verificar que el gateway de la PC sea la subinterfaz del router
+PC debe tener gateway 192.168.10.1 (no la IP del switch)
+Verificar encapsulation dot1Q en la subinterfaz
+```cisco
+R1# show interfaces GigabitEthernet0/0.10
+```
+Verificar que la VLAN esté permitida en el trunk
+```cisco
+SW1# show interfaces trunk
 ```
 
-### Common Issues and Solutions
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Devices in different VLANs cannot communicate | Router interfaces not configured | Configure router interfaces with correct IPs |
-| VLAN not assigned to interfaces | Missing switchport commands | Use `switchport access vlan X` on each port |
-| Router interfaces are down | Interfaces not enabled | Use `no shutdown` on router interfaces |
-| Incorrect subnet masks | Configuration error | Verify IP addresses and subnet masks match |
-
-### Verification Commands
-
-```console
-Switch# show vlan brief
-VLAN Name                             Status    Ports
----- -------------------------------- --------- ------
-1    default                          active    Fa0/24
-10   Accounting                       active    Fa0/1-10
-20   Sales                            active    Fa0/11-20
-
-Switch# show interfaces switchport | include Name|Access Mode
-Name: Fa0/1
-Switchport Mode: static access
-
-Router# show ip route
-Codes: C - connected, S - static, I - IGRP, R - RIP, M - mobile, B - BGP
-
-Gateway of last resort is not set
-
-C    192.168.10.0/24 is directly connected, GigabitEthernet 0/1
-C    192.168.20.0/24 is directly connected, GigabitEthernet 0/2
+### ip routing no está habilitado en switch capa 3
+```cisco
+SW-L3# show ip route
 ```
+Si aparece: Default gateway is not set
+Solución:
+```cisco
+SW-L3(config)# ip routing
+```
+### SVI aparece como down/down
+
+La VLAN debe existir en la base de datos de VLANs
+```cisco
+SW-L3# show vlan brief
+```
+Debe haber al menos un puerto activo en esa VLAN
+```cisco
+SW-L3# show vlan id 10
+```
+Crear la VLAN si no existe
+```cisco
+SW-L3(config)# vlan 10
+SW-L3(config-vlan)# name Ventas
+```
+
+---
+
+## Conceptos aplicados en este lab
+
+| Concepto | Dónde se aplica |
+|----------|----------------|
+| Router on a Stick | Método 1 con subinterfaces |
+| Subinterfaces | G0/0.10, G0/0.20, G0/0.30 en R1 |
+| encapsulation dot1Q | Asociar subinterfaz a VLAN |
+| SVI | Método 2 con switch capa 3 |
+| ip routing | Habilitar enrutamiento en switch L3 |
+| Inter-VLAN routing | Comunicación entre VLANs distintas |
+
+---
+
+## Capturas requeridas
+
+| Archivo | Contenido |
+|---------|-----------|
+| topologia-ros.png | Topología Router on a Stick |
+| topologia-svi.png | Topología Switch capa 3 |
+| r1-subinterfaces.png | show ip interface brief en R1 |
+| r1-route.png | show ip route en R1 |
+| swl3-route.png | show ip route en SW-L3 |
+| ping-ventas-ti.png | Ping exitoso PC-Ventas1 a PC-TI1 |
+| ping-ventas-rrhh.png | Ping exitoso PC-Ventas1 a PC-RRHH1 |
+| traceroute.png | Traceroute mostrando el gateway como primer salto |
