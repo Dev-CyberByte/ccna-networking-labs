@@ -456,16 +456,3 @@ netmask 255.255.255.248
 | clear ip nat translation | Limpiar traducciones dinámicas |
 
 ---
-
-## Capturas requeridas
-
-| Archivo | Contenido |
-|---------|-----------|
-| topologia.png | Vista general de la topología |
-| r1-interfaces.png | show ip interface brief en R1 |
-| nat-estatico.png | show ip nat translations con traducción estática |
-| nat-dinamico.png | show ip nat translations con traducciones dinámicas |
-| pat-translations.png | show ip nat translations con PAT activo |
-| nat-statistics.png | show ip nat statistics con hits |
-| ping-lan-internet.png | Ping exitoso desde PC-Ventas1 a internet |
-| ping-externo-servidor.png | Ping exitoso desde PC-Externa al servidor |
